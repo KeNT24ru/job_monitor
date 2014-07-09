@@ -1,0 +1,12 @@
+django<1.6
+django-common
+django-extensions
+south
+psycopg2
+pytils
+django-debug-toolbar
+lxml
+pycurl
+grab
+pymongo
+django-widget-tweaks

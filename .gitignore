@@ -1,0 +1,11 @@
+*.pyc
+*.swp
+*.swo
+*.orig
+*.egg-info/
+
+# setuptools
+/.env
+/var
+/static/component
+/static/pub

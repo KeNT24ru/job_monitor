@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <!-- Meta tags -->
+        <title>{% block title %}{% endblock %}</title>
+        <meta name="description" content="{% block meta_description %}{% endblock %}" />
+        <meta name="keywords" content="{% block meta_keywords %}{% endblock %}" />
+        <meta charset="utf-8">
+        <link rel="shortcut icon" href="{{ MEDIA_URL }}favicon.ico" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        {% block extra_meta %}{% endblock %}
+
+        <!-- CSS -->
+        <link href="{{ MEDIA_URL }}component/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="{{ MEDIA_URL }}css/custom.css" rel="stylesheet">
+        <!--<link href="{{ MEDIA_URL }}glyphicons/css/bootstrap-glyphicons.css" rel="stylesheet">-->
+        {% block extra_css %}{% endblock %}
+
+        <script src="{{ MEDIA_URL }}component/jquery/dist/jquery.min.js"></script>
+
+        <!-- Extra head stuff -->
+        {% block extra_head %}{% endblock %}
+    </head>
+<body>
+    {% include "navbar.html" %}
+
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <p>{{ message }}</p>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content_wrapper %}
+        <div class="row">
+            <div class="col-md-12">
+                {% block crumbs %}{% endblock %}
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+        {% endblock %}
+
+    </div> <!-- /container -->
+
+    <hr/>
+    {% include "footer.html" %}
+
+    <script src="{{ MEDIA_URL }}component/bootstrap/dist/js/bootstrap.min.js"></script>
+    <!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+    <script src="{{ MEDIA_URL }}component/respond/src/respond.js"></script>
+    <script src="{{ MEDIA_URL }}component/jquery-highlight/jquery.highlight.js"></script>
+    {% block extra_js %}{% endblock %}
+
+  </body>
+</html>

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<script>
+    function split_query(query) {
+        return query.split(/[^a-zA-Zа-яЁё0-9]/);
+    }
+
+    $(function() {
+        var words = split_query('{{ keywords }}');
+        $('.content-node').highlight(words);
+    });
+</script>
+
+<div>
+    <a class="btn {% if status == "new" %}btn-info{% else %}btn-default{%endif %} btn-xs" href="?status=new">new ({{ new_count }})</a>
+    &nbsp;
+    <a class="btn {% if status == "ok" %}btn-info{% else %}btn-default{%endif %} btn-xs" href="?status=ok">ok ({{ ok_count }})</a>
+    &nbsp;
+    <a class="btn {% if status == "offtopic" %}btn-info{% else %}btn-default{%endif %} btn-xs" href="?status=offtopic">offtopic ({{ offtopic_count }})</a>
+</div>
+
+<hr>
+{% for proj in projects %}
+<div class="row">
+    <div class="col-md-6">
+        <h4 style="margin-top: 0"><a href="{{ proj.url }}" target="_blank" class="content-node">{{ proj.title }}</a></h4>
+        <p class="content-node">{{ proj.description|linebreaksbr }}</p>
+    </div>
+    <div class="col-md-4">
+        <p><b>Date:</b> {{ proj.date }}</p>
+        <p><b>Country:</b> {{ proj.country }}</p>
+        <p><b>Category:</b> {{ proj.category }}</p>
+        <p><b>Status:</b> {{ proj.status }}</p>
+    </div>
+    <div class="col-md-2">
+        <a class="btn btn-success" href="{% url "job:set_project_status" proj.id "ok" %}">OK</a>
+        <a class="btn btn-warning" href="{% url "job:set_project_status" proj.id "offtopic" %}">offtopic</a>
+    </div>
+</div>
+<hr>
+{% endfor %}
+{% endblock %}
