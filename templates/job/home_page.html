@@ -31,7 +31,10 @@
         <p><b>Date:</b> {{ proj.date }}</p>
         <p><b>Country:</b> {{ proj.country }}</p>
         <p><b>Category:</b> {{ proj.category }}</p>
-        <p><b>Status:</b> {{ proj.status }}</p>
+        <p>
+            <span class="label label-default">{{ proj.status }}</span>
+            <span class="label label-info">{{ proj.service }}</span>
+        </p>
     </div>
     <div class="col-md-2">
         <a class="btn btn-success" href="{% url "job:set_project_status" proj.id "ok" %}">OK</a>
