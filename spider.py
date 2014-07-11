@@ -18,6 +18,14 @@ ELANCE_CAT_WHITE_LIST = (
     'IT & Programming',
 )
 
+TITLE_KEY_BLACK_LIST = (
+    re.compile(r'\bphp\b', re.U),
+)
+
+COMMON_KEY_BLACK_LIST = (
+    re.compile(r'\bmajento\b', re.U),
+) + TITLE_KEY_BLACK_LIST
+
 QUERY_LIST = (
     'data mining',
     'machine learning',
@@ -33,6 +41,18 @@ QUERY_LIST = (
     'process data',
     'load data',
     'analyzing data',
+
+    'data analytics',
+    'data scraping',
+    'graph database',
+    'mapreduce',
+    'nlp',
+    'natural language processing',
+    'neo4j',
+    'opencv',
+    'visualization',
+    'web scraping',
+    'machine vision',
 )
 
 def build_key_rex(query):
@@ -46,13 +66,11 @@ def build_key_rex(query):
     return re.compile(rex_body, re.U)
 
 
-KEYWORD_REX_LIST = [build_key_rex(x) for x in QUERY_LIST]
+KEY_MATCH_LIST = [build_key_rex(x) for x in QUERY_LIST]
 
 
-def check_keywords(proj):
-    if any(x.search(proj['title'].lower()) for x in KEYWORD_REX_LIST):
-        return True
-    if any(x.search(proj['description'].lower()) for x in KEYWORD_REX_LIST):
+def check_keywords(keys, where):
+    if any(x.search(where.lower()) for x in keys):
         return True
     return False
 
@@ -112,27 +130,30 @@ class OdeskSpider(Spider, JobSpider):
         for project in self.parse_projects(grab):
             print 'PROJECT:', project['title']
             if any(x in project['category'] for x in ODESK_CAT_WHITE_LIST):
-                if check_keywords(project):
-                    details = {
-                        'service': 'odesk',
-                        '_id': project['id'],
-                        'title': project['title'],
-                        'description': project['description'],
-                        'date': project['date'],
-                        'country': project['country'],
-                        'category': project['category'],
-                        'url': project['url'],
-                    }
-                    if db.project.find_one({'_id': details['_id']}):
-                        pid = details['_id']
-                        del details['_id']
-                        db.project.update(
-                            {'_id': pid},
-                            {'$set': details},
-                        )
-                    else:
-                        details['status'] = 'new'
-                        db.project.save(details)
+                if check_keywords(KEY_MATCH_LIST, project['title']):
+                    if check_keywords(KEY_MATCH_LIST, project['description']):
+                        if not check_keywords(TITLE_KEY_BLACK_LIST, project['title']):
+                            if not check_keywords(COMMON_KEY_BLACK_LIST, project['description']):
+                                details = {
+                                    'service': 'odesk',
+                                    '_id': project['id'],
+                                    'title': project['title'],
+                                    'description': project['description'],
+                                    'date': project['date'],
+                                    'country': project['country'],
+                                    'category': project['category'],
+                                    'url': project['url'],
+                                }
+                                if db.project.find_one({'_id': details['_id']}):
+                                    pid = details['_id']
+                                    del details['_id']
+                                    db.project.update(
+                                        {'_id': pid},
+                                        {'$set': details},
+                                    )
+                                else:
+                                    details['status'] = 'new'
+                                    db.project.save(details)
 
 
 class ElanceSpider(Spider, JobSpider):
@@ -188,28 +209,31 @@ class ElanceSpider(Spider, JobSpider):
         for project in self.parse_projects(grab):
             print 'PROJECT:', project['title']
             if any(x in project['category'] for x in ELANCE_CAT_WHITE_LIST):
-                if check_keywords(project):
-                    details = {
-                        'service': 'elance',
-                        '_id': project['id'],
-                        'title': project['title'],
-                        'description': project['description'],
-                        'date': project['date'],
-                        'country': project['country'],
-                        'category': project['category'],
-                        'url': project['url'],
-                    }
-                    #for key, val in details.items():
-                        #print key.upper()
-                        #print u'  %s' % val
-                    #print '-----------------------------'
-                    if db.project.find_one({'_id': details['_id']}):
-                        pid = details['_id']
-                        del details['_id']
-                        db.project.update(
-                            {'_id': pid},
-                            {'$set': details},
-                        )
-                    else:
-                        details['status'] = 'new'
-                        db.project.save(details)
+                if check_keywords(KEY_MATCH_LIST, project['title']):
+                    if check_keywords(KEY_MATCH_LIST, project['description']):
+                        if not check_keywords(TITLE_KEY_BLACK_LIST, project['title']):
+                            if not check_keywords(COMMON_KEY_BLACK_LIST, project['description']):
+                                details = {
+                                    'service': 'elance',
+                                    '_id': project['id'],
+                                    'title': project['title'],
+                                    'description': project['description'],
+                                    'date': project['date'],
+                                    'country': project['country'],
+                                    'category': project['category'],
+                                    'url': project['url'],
+                                }
+                                #for key, val in details.items():
+                                    #print key.upper()
+                                    #print u'  %s' % val
+                                #print '-----------------------------'
+                                if db.project.find_one({'_id': details['_id']}):
+                                    pid = details['_id']
+                                    del details['_id']
+                                    db.project.update(
+                                        {'_id': pid},
+                                        {'$set': details},
+                                    )
+                                else:
+                                    details['status'] = 'new'
+                                    db.project.save(details)
