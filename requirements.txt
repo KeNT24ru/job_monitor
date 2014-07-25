@@ -10,3 +10,4 @@ pycurl
 grab
 pymongo
 django-widget-tweaks
+runscript

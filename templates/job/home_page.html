@@ -12,12 +12,29 @@
     });
 </script>
 
-<div>
-    <a class="btn {% if status == "new" %}btn-info{% else %}btn-default{%endif %} btn-xs" href="?status=new">new ({{ new_count }})</a>
-    &nbsp;
-    <a class="btn {% if status == "ok" %}btn-info{% else %}btn-default{%endif %} btn-xs" href="?status=ok">ok ({{ ok_count }})</a>
-    &nbsp;
-    <a class="btn {% if status == "offtopic" %}btn-info{% else %}btn-default{%endif %} btn-xs" href="?status=offtopic">offtopic ({{ offtopic_count }})</a>
+<div class="row">
+    <div class="col-md-12">
+        {% if not tags %}
+        <span>No tags available</span>
+        {% else %}
+        {% for tag, count in tags %}
+        <a class="btn {% if active_tag == tag %}btn-success{% else %}btn-default{%endif %} btn-xs" href="?status={{ active_status }}&tag={{ tag }}&service={{ active_service }}">{{ tag }} ({{ count }})</a>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+<br>
+<div class="row">
+    <div class="col-md-3">
+        {% for status, count  in statuses %}
+        <a class="btn {% if active_status == status %}btn-success{% else %}btn-default{%endif %} btn-xs" href="?status={{ status }}&tag={{ active_tag }}&service={{ active_service }}">{{ status }} ({{ count }})</a>
+        {% endfor %}
+    </div>
+    <div class="col-md-3">
+        {% for service  in services %}
+        <a class="btn {% if active_service == service %}btn-success{% else %}btn-default{%endif %} btn-xs" href="?status={{ active_status }}&tag={{ active_tag }}&service={{ service }}">{{ service }}</a>
+        {% endfor %}
+    </div>
 </div>
 
 <hr>
@@ -37,8 +54,7 @@
         </p>
     </div>
     <div class="col-md-2">
-        <a class="btn btn-success" href="{% url "job:set_project_status" proj.id "ok" %}">OK</a>
-        <a class="btn btn-warning" href="{% url "job:set_project_status" proj.id "offtopic" %}">offtopic</a>
+        <a class="btn btn-success" href="{% url "job:set_project_status" proj.id "read" %}">read</a>
     </div>
 </div>
 <hr>

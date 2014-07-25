@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from grab.spider import Spider, Task
 from datetime import datetime
 from grab import Grab
@@ -9,51 +11,12 @@ import re
 
 from database import db
 
-ODESK_CAT_WHITE_LIST = (
-    'Web Development',
-    'Software Development',
-)
 
-ELANCE_CAT_WHITE_LIST = (
-    'IT & Programming',
-)
+def compile_rex_list(input_list):
+    return [re.compile(r'\b%s\b' % re.escape(x), re.U) for x in input_list]
 
-TITLE_KEY_BLACK_LIST = (
-    re.compile(r'\bphp\b', re.U),
-)
-
-COMMON_KEY_BLACK_LIST = (
-    re.compile(r'\bmajento\b', re.U),
-) + TITLE_KEY_BLACK_LIST
-
-QUERY_LIST = (
-    'data mining',
-    'machine learning',
-    'data analysis',
-    'data science',
-    #'statistics',
-    'data extraction',
-    'site scraping',
-    'screen scraping',
-    'site scraped',
-    'data import',
-    'import data',
-    'process data',
-    'load data',
-    'analyzing data',
-
-    'data analytics',
-    'data scraping',
-    'graph database',
-    'mapreduce',
-    'nlp',
-    'natural language processing',
-    'neo4j',
-    'opencv',
-    'visualization',
-    'web scraping',
-    'machine vision',
-)
+REX_TITLE_KEY_BLACK_LIST = compile_rex_list(settings.TITLE_KEY_BLACK_LIST)
+REX_COMMON_KEY_BLACK_LIST = compile_rex_list(settings.COMMON_KEY_BLACK_LIST)
 
 def build_key_rex(query):
     rex_body = ''
@@ -66,7 +29,7 @@ def build_key_rex(query):
     return re.compile(rex_body, re.U)
 
 
-KEY_MATCH_LIST = [build_key_rex(x) for x in QUERY_LIST]
+KEY_MATCH_LIST = [build_key_rex(x[0]) for x in settings.QUERY_LIST]
 
 
 def check_keywords(keys, where):
@@ -80,8 +43,59 @@ class JobSpider(object):
         dt = datetime.strptime(text.split(' +')[0].split(' EDT')[0].split(', ')[1], '%d %b %Y %H:%M:%S')
         return dt
 
+    def task_generator(self):
+        for query, tag in settings.QUERY_LIST:
+            g = Grab()
+            g.setup(url=self.build_query_url(query), content_type='xml')
+            yield Task('feed', grab=g, query=query, tag=tag)
 
-class OdeskSpider(Spider, JobSpider):
+    def task_feed(self, grab, task):
+        for project in self.parse_projects(grab):
+            status1 = 'NO'
+            status2 = 'NO'
+            if any(x in project['category'] for x in settings.CAT_WHITE_LIST[self.service]):
+                if (
+                    check_keywords(KEY_MATCH_LIST, project['title']) or
+                    check_keywords(KEY_MATCH_LIST, project['description'])
+                ):
+                    status1 = 'YES'
+                    if not check_keywords(REX_TITLE_KEY_BLACK_LIST, project['title']):
+                        if not check_keywords(REX_COMMON_KEY_BLACK_LIST, project['description']):
+                            status2 = 'YES'
+                            details = {
+                                'service': self.service,
+                                '_id': project['id'],
+                                'title': project['title'],
+                                'description': project['description'],
+                                'date': project['date'],
+                                'country': project['country'],
+                                'category': project['category'],
+                                'url': project['url'],
+                            }
+                            if db.project.find_one({'_id': details['_id']}):
+                                pid = details['_id']
+                                del details['_id']
+                                db.project.update(
+                                    {'_id': pid},
+                                    {'$set': details, '$addToSet': {'tags': task.tag}},
+                                )
+                            else:
+                                details['status'] = 'new'
+                                details['tags'] = [task.tag]
+                                db.project.save(details)
+            print 'TITLE: %s' % project['title']
+            print 'URL: %s' % project['url']
+            print 'DESC: %s' % project['description'][:10000]
+            print 'STATUS1: %s' % status1
+            print 'STATUS2: %s' % status2
+            print 'TAG: %s' % task.tag
+            print '---------------------------------------------------------------'
+            #import pdb; pdb.set_trace()
+
+
+class OdeskSpider(JobSpider, Spider):
+    service = 'odesk'
+
     def parse_project_description(self, root):
         for node in root.xpath('//br'):
             node.tail = (node.tail or '') + '\n'
@@ -105,9 +119,10 @@ class OdeskSpider(Spider, JobSpider):
                                   '/following-sibling::text()')[0]).strip(' :')
 
     def parse_projects(self, grab):
+        res = []
         for elem in grab.doc('//item'):
             desc_node = parse_html(elem.select('description').text())
-            yield {
+            res.append({
                 'title': decode_entities(elem.select('title').text()),
                 'description': self.parse_project_description(desc_node),
                 'date': self.parse_date(elem.select('pubDate').text()),
@@ -115,48 +130,17 @@ class OdeskSpider(Spider, JobSpider):
                 'country': self.parse_country(desc_node),
                 'id': 'odesk-%s' % self.parse_id(desc_node),
                 'url': elem.select('link').text(),
-            }
-
-    def task_generator(self):
-        for query in QUERY_LIST:
-            g = Grab()
-            g.setup(url=self.build_query_url('"%s"' % query), content_type='xml')
-            yield Task('feed', grab=g)
+            })
+        return res
 
     def build_query_url(self, query):
-        return 'https://www.odesk.com/jobs/rss?q=%s' % urllib.quote(query)
-
-    def task_feed(self, grab, task):
-        for project in self.parse_projects(grab):
-            print 'PROJECT:', project['title']
-            if any(x in project['category'] for x in ODESK_CAT_WHITE_LIST):
-                if check_keywords(KEY_MATCH_LIST, project['title']):
-                    if check_keywords(KEY_MATCH_LIST, project['description']):
-                        if not check_keywords(TITLE_KEY_BLACK_LIST, project['title']):
-                            if not check_keywords(COMMON_KEY_BLACK_LIST, project['description']):
-                                details = {
-                                    'service': 'odesk',
-                                    '_id': project['id'],
-                                    'title': project['title'],
-                                    'description': project['description'],
-                                    'date': project['date'],
-                                    'country': project['country'],
-                                    'category': project['category'],
-                                    'url': project['url'],
-                                }
-                                if db.project.find_one({'_id': details['_id']}):
-                                    pid = details['_id']
-                                    del details['_id']
-                                    db.project.update(
-                                        {'_id': pid},
-                                        {'$set': details},
-                                    )
-                                else:
-                                    details['status'] = 'new'
-                                    db.project.save(details)
+        return 'https://www.odesk.com/jobs/rss?q=%s' % urllib.quote('"%s"' % query)
 
 
-class ElanceSpider(Spider, JobSpider):
+
+class ElanceSpider(JobSpider, Spider):
+    service = 'elance'
+
     def parse_project_description(self, root):
         for node in root.xpath('//br'):
             node.tail = (node.tail or '') + '\n'
@@ -186,7 +170,7 @@ class ElanceSpider(Spider, JobSpider):
         for elem in grab.doc('//item'):
             desc_node = parse_html(elem.select('description').text())
             res.append({
-                'title': decode_entities(elem.select('title').text()).replace(' | Elance Job', ''),
+                'title': decode_entities(elem.select('title').text()).replace(u' | Elance Job', u''),
                 'description': self.parse_project_description(desc_node),
                 'date': self.parse_date(elem.select('pubDate').text()),
                 'category': self.parse_category(desc_node),
@@ -196,44 +180,6 @@ class ElanceSpider(Spider, JobSpider):
             })
         return res
 
-    def task_generator(self):
-        for query in QUERY_LIST:
-            g = Grab()
-            g.setup(url=self.build_query_url('%s' % query), content_type='xml')
-            yield Task('feed', grab=g)
-
     def build_query_url(self, query):
         return 'https://www.elance.com/r/rss/jobs/q-%s/cat-it-programming' % urllib.quote(query)
 
-    def task_feed(self, grab, task):
-        for project in self.parse_projects(grab):
-            print 'PROJECT:', project['title']
-            if any(x in project['category'] for x in ELANCE_CAT_WHITE_LIST):
-                if check_keywords(KEY_MATCH_LIST, project['title']):
-                    if check_keywords(KEY_MATCH_LIST, project['description']):
-                        if not check_keywords(TITLE_KEY_BLACK_LIST, project['title']):
-                            if not check_keywords(COMMON_KEY_BLACK_LIST, project['description']):
-                                details = {
-                                    'service': 'elance',
-                                    '_id': project['id'],
-                                    'title': project['title'],
-                                    'description': project['description'],
-                                    'date': project['date'],
-                                    'country': project['country'],
-                                    'category': project['category'],
-                                    'url': project['url'],
-                                }
-                                #for key, val in details.items():
-                                    #print key.upper()
-                                    #print u'  %s' % val
-                                #print '-----------------------------'
-                                if db.project.find_one({'_id': details['_id']}):
-                                    pid = details['_id']
-                                    del details['_id']
-                                    db.project.update(
-                                        {'_id': pid},
-                                        {'$set': details},
-                                    )
-                                else:
-                                    details['status'] = 'new'
-                                    db.project.save(details)

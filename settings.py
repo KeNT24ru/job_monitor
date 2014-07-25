@@ -207,6 +207,9 @@ GRAB_SPIDER_MODULES = ['spider']
     #'source_type': 'text_file',
 #}
 
+
+from search_config import *
+
 # **************
 # Local settings
 # **************
