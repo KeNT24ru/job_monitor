@@ -53,13 +53,28 @@ def home_page(request):
             query['service'] = active_service
         tags[tag] = db.project.find(query).count()
 
-    services = ('all', 'odesk', 'elance')
 
     statuses = {}.fromkeys(VALID_STATUS_LIST, 0)
     for status in statuses:
-        statuses[status] = db.project.find({'status': status}).count()
+        query = {'status': status}
+        if active_service and active_service != 'all':
+            query['service'] = active_service
+        if active_tag:
+            query['tags'] = active_tag
+        statuses[status] = db.project.find(query).count()
+
+    service_names = ('all', 'odesk', 'elance')
+    services = []
+    for sname in service_names:
+        query = {'status': status}
+        if sname != 'all':
+            query['service'] = sname
+        if active_tag:
+            query['tags'] = active_tag
+        services.append((sname, db.project.find(query).count()))
 
     context = {'projects': projects,
+               'project_ids_csv': ','.join(x['_id'] for x in projects),
                'keywords': ' '.join(parse_keywords()),
                'active_status': active_status,
                'active_tag': active_tag,
@@ -80,5 +95,26 @@ def set_project_status(request, pid, status):
     db.project.update(
         {'_id': project['_id']},
         {'$set': {'status': status}},
+    )
+    return redirect(request.META.get('HTTP_REFERER', reverse('job:home_page')))
+
+
+def set_bulk_project_status(request, status):
+    status = request.GET.get('status')
+    tag = request.GET.get('tag')
+    service = request.GET.get('service', 'all')
+
+    query = {}
+    if status:
+        query['status'] = status
+    if tag:
+        query['tags'] = tag
+    if service and service != 'all':
+        query['service'] = service
+
+    db.project.update(
+        query,
+        {'$set': {'status': 'read'}},
+        multi=True,
     )
     return redirect(request.META.get('HTTP_REFERER', reverse('job:home_page')))

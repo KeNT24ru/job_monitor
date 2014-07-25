@@ -13,7 +13,7 @@
 </script>
 
 <div class="row">
-    <div class="col-md-12">
+    <div class="col-md-10">
         {% if not tags %}
         <span>No tags available</span>
         {% else %}
@@ -21,6 +21,9 @@
         <a class="btn {% if active_tag == tag %}btn-success{% else %}btn-default{%endif %} btn-xs" href="?status={{ active_status }}&tag={{ tag }}&service={{ active_service }}">{{ tag }} ({{ count }})</a>
         {% endfor %}
         {% endif %}
+    </div>
+    <div class="col-md-2">
+        <a class="btn btn-info btn-xs" href="{% url "job:set_bulk_project_status" "read" %}?status={{ active_status }}&tag={{ active_tag }}&service={{ active_service }}">Mark all read</a>
     </div>
 </div>
 <br>
@@ -31,8 +34,8 @@
         {% endfor %}
     </div>
     <div class="col-md-3">
-        {% for service  in services %}
-        <a class="btn {% if active_service == service %}btn-success{% else %}btn-default{%endif %} btn-xs" href="?status={{ active_status }}&tag={{ active_tag }}&service={{ service }}">{{ service }}</a>
+        {% for service, count  in services %}
+        <a class="btn {% if active_service == service %}btn-success{% else %}btn-default{%endif %} btn-xs" href="?status={{ active_status }}&tag={{ active_tag }}&service={{ service }}">{{ service }} ({{ count }})</a>
         {% endfor %}
     </div>
 </div>
