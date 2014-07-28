@@ -20,6 +20,7 @@ build_deps:
 
 static:
 	./manage.py collectstatic --link --noinput
+	bower install
 
 run:
 	./manage.py runserver 0.0.0.0:$(port)

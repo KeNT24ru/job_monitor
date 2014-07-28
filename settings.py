@@ -40,11 +40,14 @@ USE_L10N = True
 # Static Files
 # ************
 
-MEDIA_ROOT = os.path.join(ROOT, 'static')
-MEDIA_URL = '/static/'
-STATIC_ROOT = os.path.join(ROOT, 'static/pub')
-STATIC_URL = '/static/pub/'
-STATICFILES_DIRS = ()
+MEDIA_ROOT = os.path.join(ROOT, 'static/media')
+MEDIA_URL = '/static/media/'
+STATIC_ROOT = os.path.join(ROOT, 'static/public')
+STATIC_URL = '/static/public/'
+STATICFILES_DIRS = (
+    os.path.join(ROOT, 'static/assets'),
+    os.path.join(ROOT, 'static/components'),
+)
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
@@ -105,6 +108,7 @@ INSTALLED_APPS = (
     'django_extensions',
     #'south',
     'widget_tweaks',
+    'rest_framework',
     #'pytils',
     # local project modules
 )

@@ -16,6 +16,10 @@ TITLE_KEY_BLACK_LIST = (
     'wordpress',
     'vb.net',
     'drupal',
+    'prestashop',
+    'nodejs',
+    'node.js',
+    'openerp',
 )
 
 COMMON_KEY_BLACK_LIST = (
@@ -65,4 +69,10 @@ QUERY_LIST = (
     # python, django
     ('python', 'python'),
     ('django', 'python'),
+    ('flask', 'python'),
+    # startup
+    ('startup', 'start-up'),
+    ('start-up', 'start-up'),
+    # mongodb
+    ('mongodb', 'mongodb'),
 )

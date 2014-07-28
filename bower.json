@@ -14,9 +14,13 @@
     "tests"
   ],
   "dependencies": {
+    "jquery": "1.10.2",
+    "jquery-highlight": "*",
     "normalize-css": "~3.0.1",
     "bootstrap": "~3.0.3",
-    "jquery-highlight": "*",
-    "respond": "*"
+    "respond": "*",
+    "angular": "1.2.x",
+    "angular-sanitize": "*",
+    "angular-cookies": "*"
   }
 }

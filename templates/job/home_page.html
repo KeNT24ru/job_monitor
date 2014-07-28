@@ -1,65 +1,48 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<script>
-    function split_query(query) {
-        return query.split(/[^a-zA-Zа-яЁё0-9]/);
-    }
-
-    $(function() {
-        var words = split_query('{{ keywords }}');
-        $('.content-node').highlight(words);
-    });
-</script>
-
-<div class="row">
-    <div class="col-md-10">
-        {% if not tags %}
-        <span>No tags available</span>
-        {% else %}
-        {% for tag, count in tags %}
-        <a class="btn {% if active_tag == tag %}btn-success{% else %}btn-default{%endif %} btn-xs" href="?status={{ active_status }}&tag={{ tag }}&service={{ active_service }}">{{ tag }} ({{ count }})</a>
-        {% endfor %}
-        {% endif %}
+{% verbatim %}
+<div ng-controller="ProjectListController">
+    <div class="row">
+        <div class="col-md-10">
+            <a ng-repeat="item in tags" class="btn btn-xs {{ (item.0 == searchConfig.tag) ? 'btn-success' : 'btn-default' }}" style="margin-right: 10px" ng-click="refreshProjectList({tag: item.0 })">{{ item.0 }} ({{ item.1 }})</a>
+        </div>
+        <div class="col-md-2">
+            <a class="btn btn-info btn-xs" ng-click="markVisibleProjectsRead()">Mark all read</a>
+        </div>
     </div>
-    <div class="col-md-2">
-        <a class="btn btn-info btn-xs" href="{% url "job:set_bulk_project_status" "read" %}?status={{ active_status }}&tag={{ active_tag }}&service={{ active_service }}">Mark all read</a>
+    <br>
+    <div class="row">
+        <div class="col-md-3">
+            <a ng-repeat="item in statuses" class="btn btn-xs {{ (item.0 == searchConfig.status) ? 'btn-success' : 'btn-default' }}" style="margin-right: 10px" ng-click="refreshProjectList({status: item.0 })">{{ item.0 }} ({{ item.1 }})</a>
+        </div>
+        <div class="col-md-4">
+            <a ng-repeat="item in services" class="btn btn-xs {{ (item.0 == searchConfig.service) ? 'btn-success' : 'btn-default' }}" style="margin-right: 10px" ng-click="refreshProjectList({service: item.0 })">{{ item.0 }} ({{ item.1 }})</a>
+        </div>
+    </div>
+
+    <hr>
+    <div ng-repeat="proj in projects">
+        <div class="row">
+            <div class="col-md-6">
+                <h4 style="margin-top: 0"><a href="{{ proj.url }}" target="_blank" class="content-node">{{ proj.title }}</a></h4>
+                <p class="content-node" ng-bind-html="proj.description|highlight:highlight_keywords"></p>
+            </div>
+            <div class="col-md-4">
+                <p><b>Date:</b> {{ proj.date }}</p>
+                <p><b>Country:</b> {{ proj.country }}</p>
+                <p><b>Category:</b> {{ proj.category }}</p>
+                <p>
+                    <span class="label label-default">{{ proj.status }}</span>
+                    <span class="label label-info">{{ proj.service }}</span>
+                </p>
+            </div>
+            <div class="col-md-2">
+                <a class="btn btn-success" ng-click="markProjectRead(proj.id)">read</a>
+            </div>
+        </div>
+        <hr>
     </div>
 </div>
-<br>
-<div class="row">
-    <div class="col-md-3">
-        {% for status, count  in statuses %}
-        <a class="btn {% if active_status == status %}btn-success{% else %}btn-default{%endif %} btn-xs" href="?status={{ status }}&tag={{ active_tag }}&service={{ active_service }}">{{ status }} ({{ count }})</a>
-        {% endfor %}
-    </div>
-    <div class="col-md-3">
-        {% for service, count  in services %}
-        <a class="btn {% if active_service == service %}btn-success{% else %}btn-default{%endif %} btn-xs" href="?status={{ active_status }}&tag={{ active_tag }}&service={{ service }}">{{ service }} ({{ count }})</a>
-        {% endfor %}
-    </div>
-</div>
-
-<hr>
-{% for proj in projects %}
-<div class="row">
-    <div class="col-md-6">
-        <h4 style="margin-top: 0"><a href="{{ proj.url }}" target="_blank" class="content-node">{{ proj.title }}</a></h4>
-        <p class="content-node">{{ proj.description|linebreaksbr }}</p>
-    </div>
-    <div class="col-md-4">
-        <p><b>Date:</b> {{ proj.date }}</p>
-        <p><b>Country:</b> {{ proj.country }}</p>
-        <p><b>Category:</b> {{ proj.category }}</p>
-        <p>
-            <span class="label label-default">{{ proj.status }}</span>
-            <span class="label label-info">{{ proj.service }}</span>
-        </p>
-    </div>
-    <div class="col-md-2">
-        <a class="btn btn-success" href="{% url "job:set_project_status" proj.id "read" %}">read</a>
-    </div>
-</div>
-<hr>
-{% endfor %}
+{% endverbatim %}
 {% endblock %}
